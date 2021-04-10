@@ -62,33 +62,36 @@ class _MyAppState extends State<MyApp> {
           children: [
             Expanded(
               flex: 1,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  ElevatedButton(
-                      onPressed: () => connectRequests.sink.add(true),
-                      child: Text('Connect')),
-                  ElevatedButton(
-                      onPressed: () => deleteRequests.sink.add(true),
-                      child: Text('Delete')),
-                  Text('FailFactor'),
-                  SizedBox(
-                    width: 50,
-                    child: TextField(
-                      onChanged: setFail,
-                      controller: failCtr,
-                      inputFormatters: [NumFormatter()],
+              child: Material(
+                elevation: 4,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    ElevatedButton(
+                        onPressed: () => connectRequests.sink.add(true),
+                        child: Text('Connect')),
+                    ElevatedButton(
+                        onPressed: () => deleteRequests.sink.add(true),
+                        child: Text('Delete')),
+                    Text('FailFactor'),
+                    SizedBox(
+                      width: 50,
+                      child: TextField(
+                        onChanged: setFail,
+                        controller: failCtr,
+                        inputFormatters: [NumFormatter()],
+                      ),
                     ),
-                  ),
-                  OptionSwitch(
-                      value: showGrid,
-                      onChanged: switchGrid,
-                      label: 'Show NavGrid'),
-                  OptionSwitch(
-                      value: diagonal,
-                      onChanged: switchDiagonals,
-                      label: 'Diagonals'),
-                ],
+                    OptionSwitch(
+                        value: showGrid,
+                        onChanged: switchGrid,
+                        label: 'Show NavGrid'),
+                    OptionSwitch(
+                        value: diagonal,
+                        onChanged: switchDiagonals,
+                        label: 'Diagonals'),
+                  ],
+                ),
               ),
             ),
             Expanded(

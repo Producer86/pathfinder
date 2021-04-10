@@ -40,59 +40,64 @@ class _EditAreaState extends State<EditArea> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Draggable<Offset>(
-          data: Offset(width, height),
-          child: Container(
-            width: width,
-            height: height,
-            color: Colors.grey,
-            child: Center(),
+    return Container(
+      color: Colors.grey[200],
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Draggable<Offset>(
+            data: Offset(width, height),
+            child: Container(
+              width: width,
+              height: height,
+              color: Colors.grey,
+              child: Center(),
+            ),
+            feedback: Container(
+              width: width,
+              height: height,
+              color: Colors.grey,
+              child: Center(),
+            ),
           ),
-          feedback: Container(
-            width: width,
-            height: height,
-            color: Colors.grey,
-            child: Center(),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              SizedBox(width: 10),
+              Expanded(child: Text('width')),
+              Expanded(
+                child: TextField(
+                  controller: wCtr,
+                  keyboardType: TextInputType.number,
+                  onChanged: setWidth,
+                  inputFormatters: [NumFormatter()],
+                ),
+              ),
+              SizedBox(
+                width: 10,
+              ),
+            ],
           ),
-        ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            Expanded(child: Text('width')),
-            Expanded(
-              child: TextField(
-                controller: wCtr,
-                keyboardType: TextInputType.number,
-                onChanged: setWidth,
-                inputFormatters: [NumFormatter()],
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              SizedBox(width: 10),
+              Expanded(child: Text('height')),
+              Expanded(
+                child: TextField(
+                  controller: hCtr,
+                  keyboardType: TextInputType.number,
+                  onChanged: setHeight,
+                  inputFormatters: [NumFormatter()],
+                ),
               ),
-            ),
-            SizedBox(
-              width: 10,
-            ),
-          ],
-        ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            Expanded(child: Text('height')),
-            Expanded(
-              child: TextField(
-                controller: hCtr,
-                keyboardType: TextInputType.number,
-                onChanged: setHeight,
-                inputFormatters: [NumFormatter()],
+              SizedBox(
+                width: 10,
               ),
-            ),
-            SizedBox(
-              width: 10,
-            ),
-          ],
-        )
-      ],
+            ],
+          )
+        ],
+      ),
     );
   }
 }
