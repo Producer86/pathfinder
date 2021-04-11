@@ -52,7 +52,8 @@ class MyBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return AnimatedContainer(
+      duration: Duration(milliseconds: 120),
       width: width,
       height: height,
       decoration: BoxDecoration(
