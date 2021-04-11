@@ -152,8 +152,14 @@ class _NavAreaState extends State<NavArea> {
 
   void moveBox(int id, Offset delta) {
     final old = boxes[id];
-    boxes[id] =
-        TrackedBox(shape: old.shape.translate(delta.dx, delta.dy), id: id);
+    final newBox = old.shape.translate(delta.dx, delta.dy);
+    boxes[id] = TrackedBox(
+      shape: Rect.fromCenter(
+          center: guard(newBox.center),
+          width: newBox.width,
+          height: newBox.height),
+      id: id,
+    );
     scanBoxes();
     rebuildArrows();
   }
@@ -323,6 +329,7 @@ class _NavAreaState extends State<NavArea> {
           .toList();
       endId = -1;
       scanBoxes();
+      rebuildArrows();
     } else if (startId > -1) {
       boxes.remove(startId);
       startNext = true;
