@@ -271,7 +271,14 @@ class _NavAreaState extends State<NavArea> {
       // use it based on failFactor
       final straightDist =
           Offset(dirVec.dx / nodeW, dirVec.dy / nodeH).distance;
-      if (endNode.global * widget.failFactor < straightDist) {
+      final startDist = (Offset(startPoint.dx / nodeW, startPoint.dy / nodeH) -
+              Offset(startNode.x.toDouble(), startNode.y.toDouble()))
+          .distance;
+      final endDist = (Offset(endPoint.dx / nodeW, endPoint.dy / nodeH) -
+              Offset(endNode.x.toDouble(), endNode.y.toDouble()))
+          .distance;
+      if ((endNode.global + startDist + endDist) * widget.failFactor <
+          straightDist) {
         path.lineTo(
             endNode.x * nodeW + nodeW / 2, endNode.y * nodeH + nodeH / 2);
         NavNode current = endNode;
