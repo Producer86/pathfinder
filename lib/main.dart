@@ -1,15 +1,15 @@
 import 'dart:async';
-import 'dart:developer';
 import 'dart:math';
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:pathfinder/NavNode.dart';
+import 'package:pathfinder/nav_node.dart';
 
-import 'Boxes.dart';
-import 'EditArea.dart';
-import 'NavGrid.dart';
-import 'OptionSwitch.dart';
+import 'boxes.dart';
+import 'edit_area.dart';
+import 'nav_grid.dart';
+import 'option_switch.dart';
+import 'arrow.dart';
+import 'nav_painter.dart';
 
 void main() {
   runApp(MyApp());
@@ -22,11 +22,11 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   bool showGrid = false;
-  bool diagonal = false;
-  double failFactor = 0.5;
+  bool useDiagonals = false;
+  double failFactor = 0.666;
+  final failCtr = TextEditingController(text: '0.666');
   final connectRequests = StreamController<bool>();
   final deleteRequests = StreamController<bool>();
-  final failCtr = TextEditingController(text: '0.5');
 
   void switchGrid(bool value) {
     setState(() {
@@ -36,7 +36,7 @@ class _MyAppState extends State<MyApp> {
 
   void switchDiagonals(bool value) {
     setState(() {
-      diagonal = value;
+      useDiagonals = value;
     });
   }
 
@@ -60,6 +60,7 @@ class _MyAppState extends State<MyApp> {
         body: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // Options area at top
             Expanded(
               flex: 1,
               child: Material(
@@ -73,27 +74,39 @@ class _MyAppState extends State<MyApp> {
                     ElevatedButton(
                         onPressed: () => deleteRequests.sink.add(true),
                         child: Text('Delete')),
-                    Text('FailFactor'),
-                    SizedBox(
-                      width: 50,
-                      child: TextField(
-                        onChanged: setFail,
-                        controller: failCtr,
-                        inputFormatters: [NumFormatter()],
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        Text(
+                          'FailFactor:',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        SizedBox(
+                          width: 15,
+                        ),
+                        SizedBox(
+                          width: 50,
+                          child: TextField(
+                            onChanged: setFail,
+                            controller: failCtr,
+                            inputFormatters: [NumFormatter()],
+                          ),
+                        ),
+                      ],
                     ),
                     OptionSwitch(
                         value: showGrid,
                         onChanged: switchGrid,
                         label: 'Show NavGrid'),
                     OptionSwitch(
-                        value: diagonal,
+                        value: useDiagonals,
                         onChanged: switchDiagonals,
                         label: 'Diagonals'),
                   ],
                 ),
               ),
             ),
+            // NavArea and box edit
             Expanded(
               flex: 10,
               child: Row(
@@ -103,7 +116,7 @@ class _MyAppState extends State<MyApp> {
                     flex: 10,
                     child: NavArea(
                       showGrid: showGrid,
-                      useDiagonals: diagonal,
+                      useDiagonals: useDiagonals,
                       failFactor: failFactor,
                       deleteRequests: deleteRequests.stream,
                       connectRequests: connectRequests.stream,
@@ -341,63 +354,48 @@ class _NavAreaState extends State<NavArea> {
       endPoint = endBox.centerRight;
     }
 
-    bool useRoute = true;
+    // body of our arrow
+    final path = Path();
+    // arrow body starts from endPoint
+    path.moveTo(endPoint.dx, endPoint.dy);
+
     // find nearest free node between the points
     final dirVec = endPoint - startPoint;
     final step = dirVec / dirVec.distance;
-    // connect startPoint w nearest node
-    // but no line yet, we draw from end to start
-    var checkSpot = Offset(startPoint.dx, startPoint.dy) + step;
-    var startNode = navGrid.nodes[nodeIndex(checkSpot.dx, checkSpot.dy)];
-    while (startNode.hasObstacle) {
-      // if weve already reached the goal no point using the route
-      if (dirVec.distanceSquared <= (checkSpot - startPoint).distanceSquared) {
-        useRoute = false;
-        break;
-      }
-      checkSpot += step;
-      startNode = navGrid.nodes[nodeIndex(checkSpot.dx, checkSpot.dy)];
-    }
-    // connect endPoint w nearest node
-    checkSpot = Offset(endPoint.dx, endPoint.dy) - step;
-    var endNode = navGrid.nodes[nodeIndex(checkSpot.dx, checkSpot.dy)];
-    while (endNode.hasObstacle) {
-      if (dirVec.distanceSquared <= (checkSpot - endPoint).distanceSquared) {
-        useRoute = false;
-        break;
-      }
-      checkSpot -= step;
-      endNode = navGrid.nodes[nodeIndex(checkSpot.dx, checkSpot.dy)];
-    }
-
+    // connect startPoint w nearest node in endPoint's direction
+    final startNode = findNearestFreeNode(
+        startPoint: startPoint,
+        stepVec: step,
+        maxDist2: dirVec.distanceSquared);
+    bool useRoute = startNode != null;
+    // if a route exists
     if (useRoute) {
-      // fill the body of the arrow
+      // connect endPoint w nearest node
+      final endNode = findNearestFreeNode(
+          startPoint: endPoint,
+          stepVec: -step,
+          maxDist2: dirVec.distanceSquared);
+
+      // find route
       navGrid.reset();
       navGrid.solveAstar(startNode, endNode);
 
       // compare route length w the crow's flight, and decide if we
       // use it based on failFactor
-      final routeLength = endNode.global * max(nodeW, nodeH);
-      print(routeLength);
-      print(dirVec.distance);
-      if (routeLength * widget.failFactor > dirVec.distance) {
-        useRoute = false;
+      final straightDist =
+          Offset(dirVec.dx / nodeW, dirVec.dy / nodeH).distance;
+      if (endNode.global * widget.failFactor < straightDist) {
+        path.lineTo(
+            endNode.x * nodeW + nodeW / 2, endNode.y * nodeH + nodeH / 2);
+        NavNode current = endNode;
+        while (current.parent != null) {
+          path.lineTo(current.parent.x * nodeW + nodeW / 2,
+              current.parent.y * nodeH + nodeH / 2);
+          current = current.parent;
+        }
       }
     }
 
-    // start path
-    final path = Path();
-    // start drawing the line
-    path.moveTo(endPoint.dx, endPoint.dy);
-    if (useRoute) {
-      path.lineTo(endNode.x * nodeW + nodeW / 2, endNode.y * nodeH + nodeH / 2);
-      NavNode current = endNode;
-      while (current.parent != null) {
-        path.lineTo(current.parent.x * nodeW + nodeW / 2,
-            current.parent.y * nodeH + nodeH / 2);
-        current = current.parent;
-      }
-    }
     // connect the starting point
     path.lineTo(startPoint.dx, startPoint.dy);
 
@@ -409,6 +407,23 @@ class _NavAreaState extends State<NavArea> {
           end: endPoint,
           path: path));
     });
+  }
+
+  NavNode findNearestFreeNode({
+    @required Offset startPoint,
+    @required Offset stepVec,
+    @required double maxDist2,
+  }) {
+    var checkSpot = Offset(startPoint.dx, startPoint.dy) + stepVec;
+    var result = navGrid.nodes[nodeIndex(checkSpot.dx, checkSpot.dy)];
+    while (result.hasObstacle) {
+      if (maxDist2 <= (checkSpot - startPoint).distanceSquared) {
+        return null; // TODO
+      }
+      checkSpot += stepVec;
+      result = navGrid.nodes[nodeIndex(checkSpot.dx, checkSpot.dy)];
+    }
+    return result;
   }
 
   // returns the nodes' index in point(x,y)
@@ -465,98 +480,4 @@ class _NavAreaState extends State<NavArea> {
       });
     }
   }
-}
-
-class NavAreaPainter extends CustomPainter {
-  static const nodeBorder = 2;
-  final NavGrid grid;
-  final double nodeWidth;
-  final double nodeHeight;
-  final bool showGrid;
-  final List<Arrow> arrows;
-  final nonVisitedPaint = Paint()
-    ..color = Colors.blue.withAlpha(128)
-    ..style = PaintingStyle.fill;
-  final visitedPaint = Paint()
-    ..color = Colors.blue
-    ..style = PaintingStyle.fill;
-  final filledPaint = Paint()
-    ..color = Colors.amber
-    ..style = PaintingStyle.fill;
-  final connectionPaint = Paint()
-    ..color = Colors.green.withAlpha(128)
-    ..style = PaintingStyle.fill
-    ..strokeWidth = 6;
-  final pathPaint = Paint()
-    ..color = Colors.black
-    ..style = PaintingStyle.stroke
-    ..strokeWidth = 6;
-
-  NavAreaPainter(
-      {@required this.arrows,
-      @required this.nodeWidth,
-      @required this.nodeHeight,
-      @required this.grid,
-      @required this.showGrid});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (showGrid) {
-      // draw neighbours
-      for (var x = 0; x < grid.width; x++) {
-        for (var y = 0; y < grid.height; y++) {
-          final index = y * grid.width + x;
-          final top = y * nodeHeight;
-          final left = x * nodeWidth;
-          final width = nodeWidth;
-          final height = nodeHeight;
-          for (var neighbour in grid.nodes[index].neighbours) {
-            final c1 = Offset(left + width / 2, top + height / 2);
-            final c2 = Offset(neighbour.x * width + width / 2,
-                neighbour.y * height + height / 2);
-            canvas.drawLine(c1, c2, connectionPaint);
-          }
-        }
-      }
-      // draw node
-      for (var x = 0; x < grid.width; x++) {
-        for (var y = 0; y < grid.height; y++) {
-          final index = y * grid.width + x;
-          final top = y * nodeHeight;
-          final left = x * nodeWidth;
-          final width = nodeWidth - nodeBorder;
-          final height = nodeHeight - nodeBorder;
-          canvas.drawRect(
-              Rect.fromLTWH(left, top, width, height),
-              grid.nodes[index].hasObstacle
-                  ? filledPaint
-                  : grid.nodes[index].visited
-                      ? visitedPaint
-                      : nonVisitedPaint);
-        }
-      }
-    }
-    // draw arrows
-    for (var arrow in arrows) {
-      canvas.drawCircle(arrow.start, 10, pathPaint);
-      canvas.drawRect(
-          Rect.fromCenter(center: arrow.end, width: 10, height: 10), pathPaint);
-      canvas.drawPath(arrow.path, pathPaint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return true;
-  }
-}
-
-class Arrow {
-  final int startId;
-  final int endId;
-  final Offset start;
-  final Offset end;
-  final Path path;
-
-  Arrow({this.startId, this.endId, this.start, this.end, this.path});
 }

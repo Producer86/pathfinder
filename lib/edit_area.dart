@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:pathfinder/Boxes.dart';
 
 class EditArea extends StatefulWidget {
   @override
@@ -47,18 +48,8 @@ class _EditAreaState extends State<EditArea> {
         children: [
           Draggable<Offset>(
             data: Offset(width, height),
-            child: Container(
-              width: width,
-              height: height,
-              color: Colors.grey,
-              child: Center(),
-            ),
-            feedback: Container(
-              width: width,
-              height: height,
-              color: Colors.grey,
-              child: Center(),
-            ),
+            child: MyBox(width: width, height: height),
+            feedback: MyBox(width: width, height: height),
           ),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,

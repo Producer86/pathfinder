@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'NavNode.dart';
+import 'nav_node.dart';
 
 class NavGrid {
   final List<NavNode> nodes;
@@ -93,9 +93,10 @@ class NavGrid {
     var nodesToTest = <NavNode>[];
     nodesToTest.add(startNode);
 
-    // can be faster but suboptimal
-    // while (nodesToTest.isNotEmpty && current != endNode) {
-    while (nodesToTest.isNotEmpty) {
+    // faster but suboptimal
+    while (nodesToTest.isNotEmpty && current != endNode) {
+      // slower but optimal
+      // while (nodesToTest.isNotEmpty) {
       // sort by globals
       nodesToTest.sort((a, b) => a.global.compareTo(b.global));
       // flush visited nodes

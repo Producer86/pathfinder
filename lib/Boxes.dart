@@ -31,15 +31,33 @@ class SelectableBox extends StatelessWidget {
         onMove(details.delta);
       },
       child: Container(
-        width: size.dx,
-        height: size.dy,
-        decoration: BoxDecoration(
-            color: Colors.grey,
-            border: isStart || isEnd
-                ? Border.all(
-                    color: isStart ? Colors.green : Colors.red, width: 4)
-                : null),
-      ),
+          width: size.dx,
+          height: size.dy,
+          decoration: BoxDecoration(
+              border: isStart || isEnd
+                  ? Border.all(
+                      color: isStart ? Colors.green : Colors.red, width: 4)
+                  : null),
+          child: MyBox(width: size.dx, height: size.dy)),
+    );
+  }
+}
+
+class MyBox extends StatelessWidget {
+  final double width;
+  final double height;
+
+  const MyBox({Key key, @required this.width, @required this.height})
+      : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+          color: Colors.grey, borderRadius: BorderRadius.circular(4)),
+      child: Center(),
     );
   }
 }

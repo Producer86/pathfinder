@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-
 class NavNode {
   bool hasObstacle = false;
   bool visited = false;
